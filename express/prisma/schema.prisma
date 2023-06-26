@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = "mongodb://localhost:27090/pmbtoys?directConnection=true"
+}
+
+model Users{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  email String @unique
+  password String
+  fullname String?
+  username String?
+  token Token?
+  role userRole @default(NONE)
+  post Posts[]
+}
+
+model Token{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  string String
+  users Users @relation(fields: [userID],references: [id])
+  userID String @unique @db.ObjectId  
+}
+
+model Posts {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  viewCount Int      @default(0)
+  author    Users?   @relation(fields: [authorId], references: [id])
+  authorId  String @db.ObjectId
+}
+
+model testimonial{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  title String
+  nama String
+  nama_perusahaan String
+  url String
+  content String
+}
+
+model Category{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  product Product[]
+  slug_category String @unique
+  image_category String @default("")
+}
+
+model Product{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String @default("")
+  deskripsi String? @default("")
+  harga Int? @default(0)
+  informasiTambahan String? @default("")
+  packing String? @default("")
+  satuan String? @default("")
+  ukuranProduk String? @default("")
+  ukuranDus String? @default("")
+  slug String? @unique @default("")
+  categoryID String? @db.ObjectId
+  category Category? @relation(fields:[categoryID], references:[id])
+  image_product String?
+  fiturID String[] @db.ObjectId
+  fiturs Fitur[] @relation(fields: [fiturID], references: [id])
+  stock Stock[]
+  sizeProduct sizeProduct? 
+  sizeBox sizeBox? 
+}
+model sizeProduct{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  panjang Int
+  lebar Int
+  tinggi Int
+  productID String @unique @db.ObjectId
+  product Product @relation(fields: [productID], references: [id])
+}
+model sizeBox{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  panjang Int
+  lebar Int
+  tinggi Int
+  productID String @unique @db.ObjectId
+  product Product @relation(fields: [productID], references: [id])
+}
+model Fitur{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  fitur_name String 
+  produkID String[] @db.ObjectId
+  produks Product[] @relation(fields: [produkID], references: [id])
+}
+model Stock{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  product Product @relation(fields: [productID], references: [id])
+  productID String @db.ObjectId
+  warna Warna @relation(fields: [warnaID],references: [id])
+  warnaID String @db.ObjectId
+  jumlah Int @default(0)
+  @@unique(fields:[productID,warnaID], name: "productIDwarnaID")
+}
+model Harga{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  nominal Int
+  idProductWarna String @db.ObjectId
+}
+model Warna{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  nama String @unique
+  kode String @unique
+  stock Stock[]
+}
+model Article{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  slug String @unique
+  created DateTime @default(now())
+  read Int @default(0)
+}
+model Registers{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  namaLengkap String
+  email String
+  nomorTelpon String
+  mailing Boolean @default(false)
+}
+model Result{
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  firstname String
+  lastname String
+  company String
+  handphone String
+  email String
+  message String
+  openingStockDate DateTime 
+}
+
+enum userRole {
+  NONE
+  ADMIN   
+}

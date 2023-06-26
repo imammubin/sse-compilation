@@ -1,0 +1,49 @@
+version: '3.1'
+
+services:
+
+  server:
+    container_name: server
+    hostname: express
+    build: 
+      dockerfile: Dockerfile
+    ports:
+      - 3030:${PORT_SERVER}
+    
+  database:
+    container_name: database
+    image: mongo:6
+    ports: 
+      - 27080:27017
+    command: mongod --replSet dbrs --bind_ip localhost,database
+    networks:
+      - mongodbCluster
+
+  database-replica1:
+    container_name: database-replica1
+    image: mongo:6
+    ports: 
+      - 27081:27017
+    command:  mongod --replSet dbrs --bind_ip localhost,replica1
+    networks:
+      - mongodbCluster
+  database-replica2:
+    container_name: database-replica2
+    image: mongo:6
+    ports: 
+      - 27082:27017
+    command: mongod --replSet dbrs --bind_ip localhost,replica2
+    networks:
+      - mongodbCluster
+
+  database-replica:
+    container_name: database-replica
+    links: 
+      - database
+      - database-replica1
+      - database-replica2
+    build: 
+      context: ./mongodb_replica
+
+networks:
+  mongodbCluster:

@@ -1,0 +1,81 @@
+version: '3.1'
+
+services:
+
+  server:
+    container_name: server
+    hostname: express
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - ${PORT}:${PORT_EXPOSE}
+
+  mongodb: 
+    container_name: mongodb
+    image: mongo
+    command: mongod --replSet dbrs --bind_ip localhost,mongodb 
+    ports:
+      - "27090:27017"
+    networks:
+      - mongodbNetwork
+
+  mongodbR1: 
+    container_name: mongodbR1
+    image: mongo
+    command: mongod --replSet dbrs --bind_ip localhost,mongodbR1 
+    ports:
+      - "27091:27017"
+    networks:
+      - mongodbNetwork
+    links:
+      - mongodb
+    depends_on:
+      - mongodb
+
+  mongodbR2: 
+    container_name: mongodbR2
+    image: mongo
+    command: mongod --replSet dbrs --bind_ip localhost,mongodbR2 
+    ports:
+      - "27092:27017"
+    networks:
+      - mongodbNetwork
+    links:
+      - mongodb
+      - mongodbR1
+    depends_on:
+      - mongodb
+      - mongodbR1
+
+  mongoClientTriger:
+    image: mongo
+    container_name: mongoClientTriger
+    command: mongod --replSet dbrs --arbiter
+    links:
+      - server
+      - mongodb
+      - mongodbR1
+      - mongodbR2
+    depends_on:
+      - server
+      - mongodb
+      - mongodbR1
+      - mongodbR2
+    networks:
+      - mongodbNetwork
+    entrypoint: 
+      - "bash"
+      - "-c"
+      - |
+        until mongosh --host mongodb:27017 --eval "print(\"kita coba konek ke mongodb  \")"
+        do
+          echo "Waiting for MongoDB to start..."
+          sleep 1
+        done        
+        mongosh --host mongodb:27017 --eval 'rs.initiate({_id:"dbrs", members:[{_id:0, host:"mongodb:27017", priority:10}, {_id:1, host:"mongodbR1:27017", priority:5}, {_id:2, host:"mongodbR2:27017", priority:5}]})'
+        mongosh --host mongodb:27017 --eval 'db.createUser({ user:"aing",pwd:"aing",roles: [ { role: "userAdminAnyDatabase", db: "master" }, { role: "read", db: "master" }, ] })'
+
+networks:
+  mongodbNetwork:
+    driver: bridge
